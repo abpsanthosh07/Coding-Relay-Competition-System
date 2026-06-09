@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Portal | Relay Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+
+<body>
+
+    <!-- STOP MODAL -->
+    <div id="stopModal" class="hidden">
+        <div class="modal-content">
+            <h1 style="color: #ff3e3e; margin-top: 0; letter-spacing: 2px;">⚠️ SESSION_STOPPED</h1>
+            <p style="color: #ddd; line-height: 1.6;">The Mission Administrator has paused all operations.
+                Authentication systems are currently offline.</p>
+            <div
+                style="margin-top: 20px; font-size: 0.8rem; color: #ff3e3e; font-weight: bold; border: 1px dashed #ff3e3e; padding: 10px;">
+                [UPLINK_RESTRICTED]
+            </div>
+        </div>
+    </div>
+
+    <div class="terminal-box" id="mainEntry">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="margin-bottom: 20px; padding: 10px; border: 1px dashed #ff3e3e; background: rgba(255, 62, 62, 0.1); color: #ff3e3e; text-align: center;">
+            {% for message in messages %}
+            <p style="margin: 0; font-weight: bold;">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div id="loginSection">
+            <h2>> MISSION_LOGON</h2>
+
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 25px;">[UPLINK_STATUS: <span
+                    id="logonStatus">STANDBY</span>]</p>
+
+            <form action="/login" method="POST">
+                <label>TEAM_IDENTIFIER (EMAIL):</label>
+                <input type="email" name="email" placeholder="agent@mission.com" required>
+
+                <label>ACCESS_KEY (PASSWORD):</label>
+                <input type="password" name="password" placeholder="********" required>
+
+                <button type="submit">ESTABLISH_UPLINK</button>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" onclick="showSection('register'); return false;"
+                        style="color: #00ff41; font-size: 0.8rem; text-decoration: none; border-bottom: 1px dashed #00ff41;">
+                        [NOT AUTHORIZED? INITIALIZE NEW AGENT UPLINK]
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div id="registerSection" style="display: none;">
+            <h2>> NEW_AGENT_REGISTRATION</h2>
+
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 25px;">[CREATE SECURE DATABANK ENTRY]</p>
+
+            <form action="/register" method="POST" onsubmit="return prepareRegistration()">
+                <label>TEAM_NAME (ALIAS):</label>
+                <input type="text" name="team_name" placeholder="e.g. Cyber_Squad" required>
+
+                <label>DEPARTMENT:</label>
+                <input type="text" name="department" placeholder="e.g. IT, CS, ECE" required>
+
+                <label>TEAM_MEMBERS (LOG 3 OPERATIVES):</label>
+                <div id="membersContainer">
+                    <div class="member-input-group">
+                        <input type="text" class="operative-name" placeholder="PRIMARY AGENT" required>
+                    </div>
+                    <div class="member-input-group">
+                        <input type="text" class="operative-name" placeholder="SECONDARY AGENT" required>
+                    </div>
+                    <div class="member-input-group">
+                        <input type="text" class="operative-name" placeholder="TACTICAL AGENT" required>
+                    </div>
+                </div>
+                <input type="hidden" name="members" id="finalMembers">
+
+                <label>TEAM_IDENTIFIER (EMAIL):</label>
+                <input type="email" name="email" placeholder="agent@mission.com" required>
+
+                <label>ACCESS_KEY (PASSWORD):</label>
+                <input type="password" name="password" placeholder="********" required>
+
+                <button type="submit"
+                    style="background: #ffaa00; border: 1px solid #ffaa00; color: #000;">INITIALIZE_REGISTRATION</button>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" onclick="showSection('login'); return false;"
+                        style="color: #ffaa00; font-size: 0.8rem; text-decoration: none; border-bottom: 1px dashed #ffaa00;">
+                        [ALREADY AUTHORIZED? RETURN TO LOGON]
+                    </a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+
+    <div id="systemAlert" class="hidden">
+        <div class="alert-box">
+            <div class="alert-header">
+                <span id="alertTitle">SYSTEM_MESSAGE</span>
+                <span class="alert-close" onclick="closeSystemAlert()">×</span>
+            </div>
+            <div class="alert-body" id="alertBody">
+                <!-- Message injected here -->
+            </div>
+            <div class="alert-footer">
+                <button class="ack-btn" onclick="closeSystemAlert()">[ACKNOWLEDGE]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='login.js') }}"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Mission Control | Debug Relay</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body class="relay-page">
+    <div id="stopModal" class="hidden">
+        <div class="modal-content">
+            <span class="close-x" onclick="forceCloseModal()">&times;</span>
+            <h1 style="color: #ff3e3e; margin-top: 0;">⚠️ SESSION STOPPED</h1>
+            <p style="color: #ddd;">The Admin staff has paused the session. You cannot unlock new challenges or login at
+                this time.</p>
+            <button onclick="forceCloseModal()"
+                style="background: #ff3e3e; color: white; margin-top: 10px; padding: 10px 20px; border-radius: 5px; font-weight: bold;">DISMISS
+                ALERT</button>
+            <p id="timerText">This window will auto-hide in <span id="seconds">10</span>s</p>
+        </div>
+    </div>
+
+    <div class="terminal">
+        <h1>> RELAY_DEBUG_MISSION_CONTROL</h1>
+        <div class="status-bar" id="roundIndicator">ESTABLISHING UPLINK...</div>
+
+        <div class="nav-tabs">
+            <a href="{{ url_for('relay_page') }}" class="nav-btn active">DEBUG_RELAY</a>
+            <a href="{{ url_for('leaderboard_page') }}" class="nav-btn" id="leaderboardNav">LEADERBOARD</a>
+            <a href="#" onclick="logoutUser(); return false;" class="nav-btn"
+                style="color: #ff3e3e; border-color: #ff3e3e;">[LOGOUT]</a>
+        </div>
+
+        <!-- TEAM IDENTIFICATION UI -->
+        <div
+            style="display: flex; justify-content: space-between; align-items: stretch; margin-top: 25px; margin-bottom: 30px; border: 2px solid #00ff41; padding: 25px; background: rgba(0, 255, 65, 0.08); box-shadow: 0 0 15px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.1); position: relative; overflow: hidden;">
+            <div
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #00ff41, transparent);">
+            </div>
+            <div style="text-align: left; flex: 1.5;">
+                <div style="color: #aaa; font-size: 1rem; margin-bottom: 10px; letter-spacing: 2px;">>
+                    SYSTEM_ENTITY_IDENTIFICATION</div>
+                <div
+                    style="font-size: 2.2rem; color: #00ff41; font-weight: 900; margin-bottom: 15px; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,65,0.5);">
+                    {{
+                    team.get('team_name', 'UNKNOWN_ENTITY') }}</div>
+                <div style="color: #ccc; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                    <span style="letter-spacing: 1px;">ASSIGNED_SECTOR // </span>
+                    {% set t_color = team.get('color', '') %}
+                    {% if t_color %}
+                    <span
+                        style="font-weight: 900; font-size: 1.4rem; color: {{ t_color | lower }}; border: 1px solid {{ t_color | lower }}; padding: 3px 10px; border-radius: 3px; background: rgba(0,0,0,0.5); box-shadow: 0 0 10px {{ t_color | lower }};">[{{
+                        t_color | upper }}]</span>
+                    {% else %}
+                    <span
+                        style="font-weight: 900; font-size: 1.4rem; color: #ff3e3e; border: 1px solid #ff3e3e; padding: 3px 10px; border-radius: 3px; background: rgba(255,62,62,0.1);">[UNASSIGNED]</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div
+                style="text-align: right; flex: 1; border-left: 2px dashed rgba(0, 255, 65, 0.5); padding-left: 25px; display: flex; flex-direction: column; justify-content: center;">
+                <div style="color: #aaa; font-size: 1rem; margin-bottom: 15px; letter-spacing: 2px;">> ACTIVE_OPERATIVES
+                </div>
+                <div
+                    style="color: #fff; font-size: 1.2rem; max-height: 120px; overflow-y: auto; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                    {% if team.get('members') %}
+                    {% for member in team.get('members', []) %}
+                    <div
+                        style="background: rgba(0, 255, 65, 0.15); padding: 5px 12px; border-right: 3px solid #00ff41; width: fit-content; text-transform: uppercase; letter-spacing: 1px;">
+                        <span style="color: #00ff41; margin-right: 8px;">//</span>{{ member }}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="color: #ffaa00; border: 1px solid #ffaa00; padding: 5px 10px;">NO_OPERATIVES_FOUND</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div id="relayTab" class="tab-content active">
+            <div class="input-group">
+                <input type="text" id="qrKey" placeholder="[ENTER QR SECRET]">
+                <button id="unlockBtn" onclick="unlockChallenge()">UNLOCK_CHALLENGE</button>
+            </div>
+
+            <!-- CHALLENGE OVERVIEW PANEL (appears after valid key entered) -->
+            <div id="challengeOverview" class="hidden" style="margin: 20px 0;">
+                <div
+                    style="text-align:center; color: #888; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 15px;">
+                    &gt; MISSION_BRIEFING // SELECT_ACTIVE_LEVEL</div>
+                <div id="challengeCards" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                </div>
+            </div>
+
+            <!-- (Challenge Area removed — challenges now open in a dedicated /challenge page) -->
+        </div>
+    </div>
+    <div id="systemAlert" class="hidden">
+        <div class="alert-box">
+            <div class="alert-header">
+                <span id="alertTitle">SYSTEM_MESSAGE</span>
+                <span class="alert-close" onclick="closeSystemAlert()">×</span>
+            </div>
+            <div class="alert-body" id="alertBody">
+                <!-- Message injected here -->
+            </div>
+            <div class="alert-footer">
+                <button class="ack-btn" onclick="closeSystemAlert()">[ACKNOWLEDGE]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

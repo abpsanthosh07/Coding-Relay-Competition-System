@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Mission Control | Leaderboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body class="leader-page">
+
+
+    <div class="terminal">
+        <h1>> RELAY_DEBUG_MISSION_CONTROL</h1>
+        <div class="status-bar" id="roundIndicator">ESTABLISHING UPLINK...</div>
+
+        <div class="nav-tabs" style="margin-top: 20px;">
+            <a href="{{ url_for('relay_page') }}" class="nav-btn">DEBUG_RELAY</a>
+            <a href="{{ url_for('leaderboard_page') }}" class="nav-btn active" id="leaderboardNav">LEADERBOARD</a>
+        </div>
+
+        <div id="leaderTab" class="tab-content active">
+            <div class="box" style="text-align: center;">
+                <h2 style="color: #00ff41;">GLOBAL LEADERBOARD</h2>
+                <div id="leaderAlert">Awaiting uplink...</div>
+                <!-- Logic to be handled in script.js as usual -->
+            </div>
+        </div>
+    </div>
+    <div id="systemAlert" class="hidden">
+        <div class="alert-box">
+            <div class="alert-header">
+                <span id="alertTitle">SYSTEM_MESSAGE</span>
+                <span class="alert-close" onclick="closeSystemAlert()">×</span>
+            </div>
+            <div class="alert-body" id="alertBody">
+                <!-- Message injected here -->
+            </div>
+            <div class="alert-footer">
+                <button class="ack-btn" onclick="closeSystemAlert()">[ACKNOWLEDGE]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

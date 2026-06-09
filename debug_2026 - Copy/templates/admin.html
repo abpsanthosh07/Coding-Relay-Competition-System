@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Terminal | Relay Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body>
+
+    <div class="terminal">
+        <h1>> ADMIN_RELAY_COMMAND_CENTER</h1>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <span class="status-badge" id="globalStatus">SYSTEM_ONLINE</span>
+        </div>
+
+        <!-- TOP TEAM LEADERBOARD BANNER -->
+        <div id="adminTopRunner" class="box"
+            style="margin-bottom: 20px; display: none; border-color: #ffdf00; box-shadow: 0 0 10px rgba(255, 223, 0, 0.2);">
+            <h3 style="margin-top:0; color: #ffdf00; text-align: center; letter-spacing: 2px;">🏆 TOP TEAM DETECTED 🏆
+            </h3>
+            <div id="topTeamData" style="text-align: center; font-size: 1.2rem; font-weight: bold;">Scanning...</div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-btn active" onclick="switchTab(event, 'phase')">PHASE_CONTROL</button>
+            <button class="nav-btn" onclick="switchTab(event, 'exam')">EXAM_MANAGEMENT</button>
+            <button class="nav-btn" onclick="switchTab(event, 'user')">USER_MANAGEMENT</button>
+            <button class="nav-btn" onclick="switchTab(event, 'leader')">LEADER_VISIBILITY</button>
+            <button class="nav-btn" onclick="switchTab(event, 'globalLeader')">GLOBAL_LEADERBOARD</button>
+        </div>
+
+        <!-- Phase Control Tab -->
+        <div id="phaseTab" class="tab-content active">
+            <div class="box">
+                <h2>⏱️ Session Phase Control</h2>
+                <p style="text-align: center;">ACTIVE STATUS: <span id="currentPhaseDisplay"
+                        style="color: #00ff41; font-weight: bold;">{{ current_phase }}</span></p>
+                <form action="/admin/update-phase" method="POST"
+                    style="display: flex; gap: 10px; justify-content: center;">
+                    <button name="phase" value="Round 1">START ROUND 1</button>
+                    <button name="phase" value="Round 2">START ROUND 2</button>
+                    <button name="phase" value="Round 3">START ROUND 3</button>
+                    <button name="phase" value="Stop" class="btn-danger">EMERGENCY STOP</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Exam Management Tab -->
+        <div id="examTab" class="tab-content">
+            <div class="box">
+                <h2>📝 Challenge Configuration</h2>
+                <div id="challengeForm">
+                    <input type="hidden" id="challengeId"> <!-- Used if editing -->
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label>Target Round:</label>
+                            <select id="roundSelect">
+                                <option value="Round 1">Round 1</option>
+                                <option value="Round 2">Round 2</option>
+                                <option value="Round 3">Round 3</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Team Color/Group:</label>
+                            <select id="colorSelect">
+                                <option value="Red">Red Team</option>
+                                <option value="Green">Green Team</option>
+                                <option value="Blue">Blue Team</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label>Challenge Title:</label>
+                    <input type="text" id="challengeTitle" placeholder="e.g. Memory Corruption Detected">
+
+                    <label>Description:</label>
+                    <textarea id="challengeDesc" rows="2" placeholder="Describe the bug..."></textarea>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label>C Snippet:</label>
+                            <textarea id="cCode" rows="4"></textarea>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Python Snippet:</label>
+                            <textarea id="pyCode" rows="4"></textarea>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Java Snippet:</label>
+                            <textarea id="javaCode" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label>Unlock Key (QR/Secret):</label>
+                            <input type="text" id="unlockKey" placeholder="[SECRET_KEY]">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Difficulty (Round 1):</label>
+                            <select id="difficulty">
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Duration (sec):</label>
+                            <input type="number" id="duration" value="1800">
+                        </div>
+                    </div>
+                </div>
+
+                <label>Test Cases (Input | Output):</label>
+                <div id="testCasesContainer">
+                    <div class="test-case-row">
+                        <textarea placeholder="Input" class="tc-input"></textarea>
+                        <textarea placeholder="Output" class="tc-output"></textarea>
+                    </div>
+                </div>
+                <button onclick="addTestCase()" style="margin-top: 5px; padding: 5px 10px;">+ ADD TEST CASE</button>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="saveBtn" onclick="saveChallenge()">DEPLOY_CHALLENGE</button>
+                    <button onclick="resetChallengeForm()" class="btn-danger">CLEAR_FORM</button>
+                </div>
+            </div>
+
+            <div class="box">
+                <h2>📊 Existing Challenges</h2>
+                <div id="challengesList">
+                    <!-- Populated via JS -->
+                    Loading uplink...
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Tab -->
+        <div id="userTab" class="tab-content">
+            <div class="box">
+                <h2>👥 Team Management</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>TEAM_NAME</th>
+                            <th>EMAIL_ADDRESS</th>
+                            <th>COLOR</th>
+                            <th>STATUS</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamsTableBody">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Leaderboard Dashboard Tab -->
+        <div id="leaderTab" class="tab-content">
+            <div class="box" style="text-align: center;">
+                <h2>🏆 Leaderboard Visibility Control</h2>
+                <p>Status: <span id="leaderStatusDisplay" style="font-weight: bold; color: #ff3e3e;">OFFLINE</span></p>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                    <button onclick="updateLeaderboard('On')"
+                        style="padding: 20px 40px; font-size: 1.2rem; background: #00ff41; color: #000;">TURN
+                        ON</button>
+                    <button onclick="updateLeaderboard('Off')" class="btn-danger"
+                        style="padding: 20px 40px; font-size: 1.2rem;">TURN OFF</button>
+                </div>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 20px;">[Controls whether teams can see the global
+                    scoreboard]</p>
+            </div>
+        </div>
+
+        <!-- Global Leaderboard Data Tab -->
+        <div id="globalLeaderTab" class="tab-content">
+            <div class="box" style="text-align: center;">
+                <h2 style="color: #00ff41;">🏆 GLOBAL LEADERBOARD 🏆</h2>
+                <div
+                    style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; align-items: center;">
+                    <button id="btnFilterOverall" onclick="setLeaderboardFilter('Overall')"
+                        style="border-bottom: 2px solid #00ff41; padding-bottom: 5px;">OVERALL</button>
+                    <button id="btnFilterR1" onclick="setLeaderboardFilter('Round1')" style="padding-bottom: 5px;">ROUND
+                        1</button>
+                    <button id="btnFilterR2" onclick="setLeaderboardFilter('Round2')" style="padding-bottom: 5px;">ROUND
+                        2</button>
+
+                    <div
+                        style="margin-left: 20px; border-left: 1px solid #444; padding-left: 20px; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.8rem; color: #888;">SECTOR:</span>
+                        <select id="sectorFilter" onchange="setSectorFilter(this.value)"
+                            style="background: #111; color: #00ff41; border: 1px solid #00ff41; padding: 5px; border-radius: 3px; font-family: monospace;">
+                            <option value="All">ALL_SECTORS</option>
+                            <option value="Red">RED_SECTOR</option>
+                            <option value="Green">GREEN_SECTOR</option>
+                            <option value="Blue">BLUE_SECTOR</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="adminGlobalLeaderAlert">Awaiting uplink...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="systemAlert" class="hidden">
+        <div class="alert-box">
+            <div class="alert-header">
+                <span id="alertTitle">SYSTEM_MESSAGE</span>
+                <span class="alert-close" onclick="closeSystemAlert()">×</span>
+            </div>
+            <div class="alert-body" id="alertBody">
+                <!-- Message injected here -->
+            </div>
+            <div class="alert-footer">
+                <button class="ack-btn" onclick="closeSystemAlert()">[ACKNOWLEDGE]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='admin.js') }}"></script>
+</body>
+
+</html>

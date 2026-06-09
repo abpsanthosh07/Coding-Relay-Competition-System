@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge | Debug Relay</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    <style>
+        /* Override admin.css hidden rule needed here too */
+        .hidden {
+            display: none !important;
+        }
+
+        #challengePage {
+            max-width: 1050px;
+            margin: auto;
+        }
+
+        .challenge-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px dashed #333;
+        }
+
+        .challenge-header h2 {
+            color: #00ff41;
+            margin: 0;
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        #timerDisplay {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #00ff41;
+            padding: 8px 18px;
+            background: rgba(0, 255, 65, 0.07);
+            font-weight: bold;
+            letter-spacing: 2px;
+            min-width: 190px;
+            justify-content: center;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        #timerValue {
+            color: #00ff41;
+            font-size: 1.4rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        #challengeDesc {
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            border-left: 3px solid #00ff41;
+            padding-left: 12px;
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .editor-container>div {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        #codeEditor {
+            width: 100%;
+            min-height: calc(300px + 3cm);
+            background: #111;
+            color: #00ff41;
+            border: 1px solid #ff3e3e;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            box-sizing: border-box;
+            outline: none;
+            resize: vertical;
+            overflow: auto;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        #codeEditor:focus {
+            box-shadow: 0 0 10px #ff3e3e;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .action-row button {
+            flex: 1;
+        }
+
+        #outputWindow {
+            background: #000;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 15px;
+            margin-top: 14px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .lang-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .lang-row label {
+            font-size: 0.8rem;
+            color: #00ff41;
+            display: inline;
+            margin: 0;
+        }
+
+        .lang-row select {
+            width: auto;
+            margin: 0;
+        }
+
+        @keyframes timerPulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        #loadingState {
+            text-align: center;
+            padding: 60px 0;
+            color: #888;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+        }
+
+        /* Leaderboard Modal Styles */
+        #leaderboardModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #leaderboardModal .modal-container {
+            width: 90%;
+            max-width: 800px;
+            background: #000;
+            border: 2px solid #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+
+        #leaderboardModal .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #leaderboardModal .modal-header h2 {
+            color: #00ff41;
+            margin: 0;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        #leaderboardModal .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        #leaderboardModal .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #333;
+            text-align: right;
+        }
+
+        #leaderboardModal .close-btn {
+            background: none;
+            border: 1px solid #ff3e3e;
+            color: #ff3e3e;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #leaderboardModal .close-btn:hover {
+            background: #ff3e3e;
+            color: #fff;
+        }
+
+        #leaderboardTable {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ccc;
+        }
+
+        #leaderboardTable th {
+            text-align: left;
+            border-bottom: 2px solid #00ff41;
+            padding: 10px;
+            color: #00ff41;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        #leaderboardTable td {
+            padding: 10px;
+            border-bottom: 1px solid #222;
+        }
+
+        /* Focus Overlay Styles */
+        #focusOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 11000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ff3e3e;
+            text-align: center;
+        }
+
+        #focusOverlay h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255, 62, 62, 0.5);
+        }
+
+        #focusOverlay p {
+            font-size: 1.2rem;
+            color: #ddd;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
+        #focusOverlay .resume-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: #ffaa00;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+        }
+
+        #focusOverlay .resume-btn:hover {
+            background: #ffc44d;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.6);
+        }
+    </style>
+</head>
+
+<body class="relay-page">
+
+    <!-- SESSION STOPPED MODAL -->
+    <div id="stopModal" class="hidden">
+        <div class="modal-content">
+            <span class="close-x" onclick="forceCloseModal()">&times;</span>
+            <h1 style="color: #ff3e3e; margin-top: 0;">⚠️ SESSION STOPPED</h1>
+            <p style="color: #ddd;">The Admin staff has paused the session.</p>
+            <button onclick="forceCloseModal()"
+                style="background: #ff3e3e; color: white; margin-top: 10px; padding: 10px 20px; border-radius: 5px; font-weight: bold;">DISMISS
+                ALERT</button>
+        </div>
+    </div>
+
+    <div class="terminal" id="challengePage">
+        <h1>> CHALLENGE_TERMINAL</h1>
+
+        <!-- NAV -->
+        <div class="nav-tabs">
+            <a href="#" class="nav-btn" onclick="showLeaderboardModal(); return false;"
+                id="leaderboardNav">LEADERBOARD</a>
+        </div>
+
+        <div id="roundIndicator" class="status-bar">ESTABLISHING UPLINK...</div>
+
+        <!-- LOADING STATE -->
+        <div id="loadingState">⏳ LOADING_CHALLENGE_DATA...</div>
+
+        <!-- MAIN CHALLENGE CONTENT (hidden until loaded) -->
+        <div id="challengeContent" class="hidden">
+
+            <!-- HEADER: title + timer -->
+            <div class="challenge-header">
+                <h2 id="challengeTitle"></h2>
+                <div id="timerDisplay">
+                    <span style="color: #888; font-size: 0.75rem;">⏱ TIME_LEFT:</span>
+                    <span id="timerValue">--:--</span>
+                </div>
+            </div>
+
+            <p id="challengeDesc"></p>
+
+            <!-- LANGUAGE SELECTOR -->
+            <div class="lang-row">
+                <label>SELECT LANGUAGE BUFFER:</label>
+                <select id="langSelect" onchange="updateCodeDisplay()">
+                    <option value="python_code">Python</option>
+                    <option value="c_code">C Language</option>
+                    <option value="java_code">Java</option>
+                </select>
+            </div>
+
+            <!-- CODE ROW -->
+            <div class="editor-container">
+                <div>
+                    <h3
+                        style="color:#ff3e3e; margin-bottom:6px; font-size:0.9rem; letter-spacing:1px; text-align: center;">
+                        ERRONEOUS_CODE_DETECTED:</h3>
+                    <textarea id="codeEditor" spellcheck="false" placeholder="// Loading code snippet..."
+                        oninput="updateEditorSize()"></textarea>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="action-row">
+                <button id="submitBtn" onclick="submitCode()"
+                    style="background: #ffaa00; border: 1px solid #ffaa00; color: #000; padding: 15px; width: 100%; display: block;">[SUBMIT_SOLUTION]</button>
+            </div>
+
+            <!-- OUTPUT WINDOW -->
+            <div id="outputWindow" class="hidden">> WAITING_FOR_EXECUTION...</div>
+
+        </div>
+    </div>
+
+    <!-- FULLSCREEN OVERLAY -->
+    <div id="fullscreenOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: #ff3e3e; text-align: center;">
+        <h1 style="font-size: 3rem; margin-bottom: 20px;">⚠️ FULLSCREEN REQUIRED ⚠️</h1>
+        <p style="font-size: 1.2rem; color: #ddd; max-width: 600px; margin-bottom: 30px;">
+            This challenge must be completed in full-screen mode. If you exit full-screen, the session will be paused
+            and this warning will appear.
+        </p>
+        <div style="display: flex; gap: 20px;">
+            <button onclick="enterFullscreen()"
+                style="padding: 15px 30px; font-size: 1.2rem; background: #00ff41; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 5px;">ENTER
+                FULLSCREEN</button>
+
+        </div>
+    </div>
+
+    <!-- SYSTEM ALERT MODAL -->
+    <div id="systemAlert" class="hidden">
+        <div class="alert-box">
+            <div class="alert-header">
+                <span id="alertTitle">SYSTEM_MESSAGE</span>
+                <span class="alert-close" onclick="closeSystemAlert()">×</span>
+            </div>
+            <div class="alert-body" id="alertBody"></div>
+            <div class="alert-footer">
+                <button class="ack-btn" onclick="closeSystemAlert()">[ACKNOWLEDGE]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="leaderboardModal" class="hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>> GLOBAL_LEADERBOARD</h2>
+                <span class="alert-close" onclick="closeLeaderboardModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div id="leaderboardContent">
+                    <p style="text-align: center; color: #888;">⏳ FETCHING_UPLINK_DATA...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" onclick="closeLeaderboardModal()">[DISMISS]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW FOCUS OVERLAY -->
+    <div id="focusOverlay" class="hidden">
+        <h1>⚠️ RESTRICTED_ACCESS ⚠️</h1>
+        <p>
+            Uplink integrity compromised. Window switch or tab change detected.
+            You must remain focused on this terminal to maintain your secure connection.
+        </p>
+        <button class="resume-btn" onclick="resumeFocus()">[RESUME_SESSION]</button>
+    </div>
+
+    <script>
+        // ──────────────────────────────────────────────
+        // STATE
+        // ──────────────────────────────────────────────
+        let currentChallengeData = null;
+        let examTimerInterval = null;
+        let examTimeLeft = 0;
+        let popupShownThisPhase = false;
+        let modalTimer = null;
+        let lastKnownPhase = 'Stop';
+        let hasLoadedChallenge = false;
+
+        // Window Focus Logic
+        window.addEventListener('blur', () => {
+            showFocusOverlay();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                showFocusOverlay();
+            }
+        });
+
+        function showFocusOverlay() {
+            document.getElementById('focusOverlay').classList.remove('hidden');
+        }
+
+        function resumeFocus() {
+            document.getElementById('focusOverlay').classList.add('hidden');
+        }
+
+        // Get challenge ID from the URL path  e.g. /challenge/<id>
+        const CHALLENGE_ID = window.location.pathname.split('/challenge/')[1];
+
+        function enterFullscreen() {
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+                });
+            }
+        }
+
+        function terminateChallenge() {
+            window.location.href = '/relay';
+        }
+
+        document.addEventListener('fullscreenchange', (event) => {
+            if (!document.fullscreenElement) {
+                document.getElementById('fullscreenOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('fullscreenOverlay').style.display = 'none';
+                if (!hasLoadedChallenge) {
+                    hasLoadedChallenge = true;
+                    loadChallenge();
+                }
+            }
+        });
+
+        // ──────────────────────────────────────────────
+        // BOOT: load challenge data on page load
+        // ──────────────────────────────────────────────
+        window.onload = async () => {
+            checkPhase();
+            setInterval(checkPhase, 3000);
+            document.getElementById('fullscreenOverlay').style.display = 'flex';
+        };
+
+        async function loadChallenge() {
+            if (!CHALLENGE_ID) {
+                document.getElementById('loadingState').innerText = 'ERROR: No challenge ID in URL.';
+                return;
+            }
+            try {
+                const res = await fetch('/api/get-challenge/' + encodeURIComponent(CHALLENGE_ID));
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    document.getElementById('loadingState').innerText =
+                        '⛔ ' + (data.message || 'Failed to load challenge.');
+                    return;
+                }
+
+                currentChallengeData = data.challenge;
+                renderChallenge(data.challenge);
+            } catch (e) {
+                document.getElementById('loadingState').innerText = 'CONNECTION ERROR: Could not reach server.';
+                console.error(e);
+            }
+        }
+
+        function renderChallenge(c) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('challengeContent').classList.remove('hidden');
+
+            document.getElementById('challengeTitle').innerText = '> ' + (c.title || 'UNTITLED');
+            document.getElementById('challengeDesc').innerText = c.description || '';
+
+            updateCodeDisplay();
+            startExamTimer((c.duration !== undefined && c.duration !== null) ? parseInt(c.duration) : 1800);
+        }
+
+        // ──────────────────────────────────────────────
+        // TIMER
+        // ──────────────────────────────────────────────
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+        }
+
+        function startExamTimer(duration) {
+            if (examTimerInterval) { clearInterval(examTimerInterval); examTimerInterval = null; }
+            examTimeLeft = duration;
+            const el = document.getElementById('timerValue');
+            const box = document.getElementById('timerDisplay');
+            if (!el) return;
+
+            el.style.color = '#00ff41';
+            box.style.borderColor = '#00ff41';
+            box.style.background = 'rgba(0,255,65,0.07)';
+            el.style.animation = 'none';
+            el.innerText = formatTime(examTimeLeft);
+
+            examTimerInterval = setInterval(() => {
+                examTimeLeft--;
+                el.innerText = formatTime(Math.max(0, examTimeLeft));
+
+                if (examTimeLeft <= 60 && examTimeLeft > 0) {
+                    el.style.color = '#ff3e3e';
+                    box.style.borderColor = '#ff3e3e';
+                    box.style.background = 'rgba(255,62,62,0.1)';
+                    el.style.animation = 'timerPulse 1s ease-in-out infinite';
+                }
+
+                if (examTimeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    examTimerInterval = null;
+                    el.innerText = '00:00';
+                    showSystemAlert("⏱ TIME'S UP! Auto-submitting your solution...", 'TIME_EXPIRED');
+                    setTimeout(() => submitCode(true), 1500);
+                }
+            }, 1000);
+        }
+
+        // ──────────────────────────────────────────────
+        // CODE DISPLAY
+        // ──────────────────────────────────────────────
+        function updateCodeDisplay() {
+            if (!currentChallengeData) return;
+            const lang = document.getElementById('langSelect').value;
+            document.getElementById('codeEditor').value =
+                currentChallengeData[lang] || '// No snippet provided for this language.';
+            updateEditorSize();
+            const out = document.getElementById('outputWindow');
+            out.classList.add('hidden');
+            out.innerText = '> WAITING_FOR_EXECUTION...';
+        }
+
+        function updateEditorSize() {
+            const editor = document.getElementById('codeEditor');
+            const lines = editor.value.split('\n').length;
+            editor.rows = lines + 15;
+        }
+
+        // ──────────────────────────────────────────────
+        // SUBMIT CODE
+        // ──────────────────────────────────────────────
+        async function submitCode(isAutoSubmit = false) {
+            if (!currentChallengeData) return;
+            const testCases = currentChallengeData.test_cases;
+            const outputWin = document.getElementById('outputWindow');
+
+            if (!testCases || testCases.length === 0) {
+                showSystemAlert('No test cases defined for this challenge!', 'NO_TEST_CASES');
+                return;
+            }
+
+            outputWin.classList.remove('hidden');
+            outputWin.innerText = '> EVALUATING_TEST_CASES... PLEASE WAIT...';
+            outputWin.style.color = '#ffaa00';
+
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                const res = await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: document.getElementById('codeEditor').value,
+                        language: document.getElementById('langSelect').value,
+                        test_cases: testCases,
+                        challenge_id: currentChallengeData.id,
+                        force_progress: isAutoSubmit
+                    })
+                });
+                const data = await res.json();
+
+                if (!data.success && data.error && !data.results) {
+                    outputWin.style.color = '#ff3e3e';
+                    outputWin.innerText = '=== SUBMISSION_FAILED ===\n\nERROR:\n' + data.error;
+                } else if (data.results) {
+                    let allPassed = true;
+                    let passedCount = 0;
+                    let resultHtml = `=== EVALUATION_RESULTS ===\nTotal Tests: ${data.results.length}\n`;
+
+                    data.results.forEach((res, i) => {
+                        if (res.passed) {
+                            passedCount++;
+                            resultHtml += `<span style="color:#00ff41;">[PASS] Test Case ${i + 1}</span>\n`;
+                        } else {
+                            allPassed = false;
+                            resultHtml += `<span style="color:#ff3e3e;">[FAIL] Test Case ${i + 1}</span>\n`;
+                            resultHtml += `  Input:    ${res.input.trim()}\n`;
+                            resultHtml += `  Expected: ${res.expected.trim()}\n`;
+                            resultHtml += `  Output:   <span style="color:orange;">${res.actual.trim() || '<no output>'}</span>\n`;
+                            if (res.error) resultHtml += `  Error:    <span style="color:#ff3e3e;">${res.error}</span>\n`;
+                        }
+                    });
+
+                    resultHtml += `\nPassed ${passedCount} out of ${data.results.length} cases.`;
+
+                    if (allPassed) {
+                        resultHtml = `<span style="color:#00ff41;font-weight:bold;font-size:1.2em;">🎉 ALL TEST CASES PASSED! MISSION ACCOMPLISHED! 🎉</span>\n<span style="color:#ddd; font-style:italic;">Redirecting to Mission Hub...</span>\n\n` + resultHtml;
+                        // Stop timer — mission complete
+                        if (examTimerInterval) { clearInterval(examTimerInterval); examTimerInterval = null; }
+
+                        setTimeout(() => {
+                            window.location.href = '/relay';
+                        }, 2500);
+                    } else if (isAutoSubmit) {
+                        resultHtml = `<span style="color:#ff3e3e;font-weight:bold;font-size:1.2em;">⏱ TIME EXPIRED! PARTIAL PROGRESS SAVED. ⏱</span>\n<span style="color:#ddd; font-style:italic;">Returning to Mission Hub...</span>\n\n` + resultHtml;
+                        setTimeout(() => {
+                            window.location.href = '/relay';
+                        }, 4000);
+                    }
+
+                    outputWin.innerHTML = resultHtml.replace(/\n/g, '<br>');
+                    outputWin.style.color = allPassed ? '#00ff41' : '#ccc';
+                } else {
+                    outputWin.style.color = '#ff3e3e';
+                    outputWin.innerText = 'Unknown Evaluation Error.';
+                }
+            } catch (e) {
+                outputWin.style.color = 'orange';
+                outputWin.innerText = '=== CONNECTION_ERROR ===\nFailed to reach evaluation server.';
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        // HEARTBEAT
+        // ──────────────────────────────────────────────
+        async function checkPhase() {
+            try {
+                const res = await fetch('/check-phase');
+                const data = await res.json();
+
+                if (lastKnownPhase === 'Stop' && data.phase !== 'Stop') { forceCloseModal(); popupShownThisPhase = false; }
+                lastKnownPhase = data.phase;
+
+
+
+                const ri = document.getElementById('roundIndicator');
+                if (data.phase === 'Stop') {
+                    if (!popupShownThisPhase) showModal();
+                    ri.innerText = '🔴 STATUS: SESSION FROZEN BY ADMIN';
+                    ri.style.color = '#ff3e3e';
+                } else {
+                    forceCloseModal(); popupShownThisPhase = false;
+                    ri.innerText = '🟢 ACTIVE: ' + data.phase;
+                    ri.style.color = '#00ff41';
+                }
+            } catch (e) { console.warn('Heartbeat lost.'); }
+        }
+
+        // ──────────────────────────────────────────────
+        // MODAL
+        // ──────────────────────────────────────────────
+        function showModal() {
+            document.getElementById('stopModal').classList.remove('hidden');
+            popupShownThisPhase = true;
+        }
+        function forceCloseModal() { document.getElementById('stopModal').classList.add('hidden'); }
+
+        // ──────────────────────────────────────────────
+        // SYSTEM ALERT
+        // ──────────────────────────────────────────────
+        function showSystemAlert(msg, title = 'SYSTEM_MESSAGE') {
+            const modal = document.getElementById('systemAlert');
+            const titleEl = document.getElementById('alertTitle');
+            const bodyEl = document.getElementById('alertBody');
+            if (modal && titleEl && bodyEl) {
+                titleEl.innerText = '> ' + title;
+                bodyEl.innerText = msg;
+                modal.classList.remove('hidden');
+            } else { alert(msg); }
+        }
+        function closeSystemAlert() { document.getElementById('systemAlert').classList.add('hidden'); }
+
+        // ──────────────────────────────────────────────
+        // LEADERBOARD MODAL LOGIC
+        // ──────────────────────────────────────────────
+        async function showLeaderboardModal() {
+            const modal = document.getElementById('leaderboardModal');
+            modal.classList.remove('hidden');
+            const content = document.getElementById('leaderboardContent');
+            content.innerHTML = '<p style="text-align: center; color: #888;">⏳ FETCHING_UPLINK_DATA...</p>';
+
+            try {
+                const response = await fetch('/api/leaderboard?round=Overall');
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    content.innerHTML = '<p style="text-align: center; color: #ffaa00;">No team data available currently.</p>';
+                    return;
+                }
+
+                let html = `
+                    <table id="leaderboardTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Team Name</th>
+                                <th>Department</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach((team, index) => {
+                    let color = "#aaa";
+                    let rankStr = `${index + 1}`;
+                    if (index === 0) { color = "#ffdf00"; rankStr = "🏆 1"; }
+                    else if (index === 1) { color = "#c0c0c0"; rankStr = "🥈 2"; }
+                    else if (index === 2) { color = "#cd7f32"; rankStr = "🥉 3"; }
+
+                    html += `
+                        <tr style="color: ${color}; ${index < 3 ? 'font-weight: bold;' : ''}">
+                            <td>${rankStr}</td>
+                            <td>${team.team_name}</td>
+                            <td>${team.department || '-'}</td>
+                            <td>${team.score} PTS</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                content.innerHTML = html;
+            } catch (e) {
+                content.innerHTML = '<p style="text-align: center; color: #ff3e3e;">⛔ CONNECTION_ERROR: Failed to fetch leaderboard.</p>';
+            }
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboardModal').classList.add('hidden');
+        }
+
+        function logoutUser() {
+            if (confirm('Terminate secure uplink and log out?')) {
+                window.location.href = '/logout';
+            }
+        }
+    </script>
+</body>
+
+</html>

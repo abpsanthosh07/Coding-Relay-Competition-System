@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Mission Control | Exam Environment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body class="exam-page">
+    <div id="stopModal" class="hidden">
+        <div class="modal-content">
+            <h1 style="color: #ff3e3e; margin-top: 0;">⚠️ SESSION STOPPED</h1>
+            <p style="color: #ddd;">The Admin staff has paused the session. Operations suspended.</p>
+            <button onclick="forceCloseModal()"
+                style="background: #ff3e3e; color: white; margin-top: 10px; padding: 10px 20px; border-radius: 5px; font-weight: bold;">DISMISS</button>
+        </div>
+    </div>
+
+    <div id="examTimer" class="hidden"
+        style="position: fixed; top: 10px; right: 20px; font-size: 2rem; color: red; background: black; padding: 10px; border: 2px solid red; z-index: 1000;">
+        EXAM TIME: <span id="examCountdown">3600s</span>
+    </div>
+
+    <div class="terminal">
+        <h1>> RELAY_DEBUG_MISSION_CONTROL</h1>
+        <div class="status-bar" id="roundIndicator">ESTABLISHING UPLINK...</div>
+
+        <div class="nav-tabs" style="margin-top: 20px;">
+            <a href="{{ url_for('relay_page') }}" class="nav-btn">DEBUG_RELAY</a>
+            <a href="{{ url_for('exam_page') }}" class="nav-btn active">EXAM_ENVIRONMENT</a>
+            <a href="{{ url_for('leaderboard_page') }}" class="nav-btn">LEADERBOARD</a>
+        </div>
+
+        <div id="examTab" class="tab-content active">
+            <div class="box" style="text-align: center;">
+                <h2 style="color: #ff3e3e;">STRICT EXAM ENVIRONMENT</h2>
+                <p>Entering this zone will enforce full-screen and tab-monitoring.</p>
+                <div id="examEntryWrapper">
+                    <button onclick="enterExamMode()"
+                        style="background: #ff3e3e; color: white; padding: 15px 30px; font-size: 1.2rem; cursor: pointer;">ENTER
+                        EXAM MODE</button>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 20px; color: #888;">If you leave this environment, your session
+                    may be flagged.</p>
+            </div>
+
+            <!-- These are hidden until Exam Mode starts -->
+            <div id="examContent" class="hidden">
+                <div class="input-group">
+                    <input type="text" id="qrKey" placeholder="[ENTER QR SECRET]">
+                    <button id="unlockBtn" onclick="unlockChallenge()">UNLOCK_CHALLENGE</button>
+                </div>
+
+                <div id="challengeArea" class="hidden">
+                    <h2 id="title" style="color: #00ff41; margin-bottom: 5px;"></h2>
+                    <p id="desc" style="color: #888; margin-top: 0; margin-bottom: 20px;"></p>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.8rem; color: #00ff41;">SELECT LANGUAGE BUFFER:</label><br>
+                        <select id="langSelect" onchange="updateCodeDisplay()">
+                            <option value="python_code">Python</option>
+                            <option value="c_code">C Language</option>
+                            <option value="java_code">Java</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 2;">
+                            <h3>ERRONEOUS_CODE_DETECTED:</h3>
+                            <textarea id="codeEditor" spellcheck="false"
+                                placeholder="// Select a language buffer to load code..."></textarea>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="color: #ffaa00;">CUSTOM_STDIN (INPUT):</h3>
+                            <textarea id="customInput" spellcheck="false"
+                                style="width: 100%; height: 250px; background: #111; color: #ffaa00; border: 1px solid #ffaa00; font-family: 'Courier New', monospace; padding: 15px; box-sizing: border-box; resize: vertical;"
+                                placeholder="Enter inputs here separated by newlines..."></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button id="runScriptBtn" onclick="runCode()"
+                            style="flex: 1; border: 1px solid #00ff41;">[EXECUTE_BUFFER]</button>
+                        <button id="submitBtn" onclick="submitCode()"
+                            style="flex: 1; background: #ffaa00; border: 1px solid #ffaa00; color: #000;">[SUBMIT_SOLUTION]</button>
+                    </div>
+                    <div id="outputWindow" class="hidden">> WAITING_FOR_EXECUTION...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
